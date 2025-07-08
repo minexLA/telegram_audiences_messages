@@ -1,0 +1,34 @@
+{
+    "name": "minex/telegram_audiences_messages",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Minex\\TelegramAudiencesMessages\\": "src/",
+            "Minex\\TelegramAudiencesMessages\\Database\\Factories\\": "database/factories"
+        },
+        "classmap": ["src/"]
+    },
+    "require": {
+        "php": "^8.0",
+        "ext-json": "*",
+        "illuminate/console": "^8.0|^9.0|^10",
+        "illuminate/contracts": "^8.0|^9.0|^10",
+        "illuminate/database": "^8.0|^9.0|^10",
+        "illuminate/support": "^8.0|^9.0|^10"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Minex\\TelegramAudiencesMessages\\TelegramAudiencesMessagesServiceProvider"
+            ],
+            "aliases": {
+                "TelegramAudiencesMessages": "Minex\\TelegramAudiencesMessages\\TelegramAudiencesMessagesFacade"
+            }
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
