@@ -6,6 +6,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
+/**
+ * @property int $message_id
+ * @property string $path
+ * @property string $type
+ * @property int|null $telegram_file_id
+ */
 class TelegramMessageMedia extends Model
 {
     use HasFactory;
@@ -17,6 +23,10 @@ class TelegramMessageMedia extends Model
         'path',
         'type',
         'telegram_file_id',
+    ];
+
+    protected $casts = [
+        'telegram_file_id' => 'int',
     ];
 
     public function message(): HasOne

@@ -17,9 +17,8 @@
         "illuminate/support": "^8.0|^9.0|^10"
     },
     "scripts": {
-        "pint": [
-            "@php ./vendor/bin/pint"
-        ]
+        "format": "@php ./vendor/bin/pint",
+        "analyse": "@php vendor/bin/phpstan analyse"
     },
     "extra": {
         "laravel": {
@@ -37,6 +36,8 @@
     "minimum-stability": "dev",
     "prefer-stable": true,
     "require-dev": {
-        "laravel/pint": "^1.5.0"
+        "larastan/larastan": "1.0",
+        "laravel/pint": "^1.5.0",
+        "orchestra/testbench": "^7.55"
     }
 }

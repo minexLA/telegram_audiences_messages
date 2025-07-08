@@ -6,6 +6,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
+/**
+ * @property int $message_id
+ * @property string $label
+ * @property string $content
+ * @property string $type
+ */
 class TelegramMessageButton extends Model
 {
     use HasFactory;

@@ -7,6 +7,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
+/**
+ * @property int $message_id
+ * @property string $user_type
+ * @property int $user_id
+ * @property string $send_status
+ * @property string $bot_token
+ * @property int|null $telegram_message_id
+ */
 class TelegramMessageRecipient extends Model
 {
     use HasFactory;
@@ -24,6 +32,7 @@ class TelegramMessageRecipient extends Model
 
     protected $casts = [
         'bot_token' => 'encrypted',
+        'telegram_message_id' => 'int',
     ];
 
     public function user(): MorphTo

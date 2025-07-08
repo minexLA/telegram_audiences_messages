@@ -2,6 +2,7 @@
 
 namespace Minex\TelegramAudiencesMessages;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,10 +11,18 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use InvalidArgumentException;
 use Minex\TelegramAudiencesMessages\Exceptions\TypeNotFoundException;
 use Minex\TelegramAudiencesMessages\Interfaces\HasTelegramId;
 
+/**
+ * @property string|null $related_type
+ * @property int|null $related_id
+ * @property string $type
+ * @property string|null $trigger
+ * @property string $text
+ * @property string $send_status
+ * @property Carbon|null $send_at
+ */
 class TelegramMessage extends Model
 {
     use HasFactory;
@@ -187,7 +196,7 @@ class TelegramMessage extends Model
     public function addRecipient(Model $recipient, string $botToken): TelegramMessageRecipient
     {
         if (! $recipient instanceof HasTelegramId) {
-            throw new InvalidArgumentException('Recipient must be an Eloquent Model implementing HasTelegramId.');
+            throw new \InvalidArgumentException('Recipient must be an Eloquent Model implementing HasTelegramId.');
         }
 
         return $this->recipients()->create([
