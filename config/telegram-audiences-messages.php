@@ -18,7 +18,7 @@ return [
             'class' => 'App\\Models\\Model.php',
             'bot_token' => 'bot_token',
             'filters' => [
-                'example'
+                'example',
             ],
         ],
     ],
@@ -33,6 +33,6 @@ return [
     |
     */
     'filters' => [
-        'example' => 'App\\Filters\\Filter.php'
+        'example' => 'App\\Filters\\Filter.php',
     ],
 ];

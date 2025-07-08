@@ -2,7 +2,6 @@
 
 namespace Minex\TelegramAudiencesMessages\MatchTypes;
 
-
 use Minex\TelegramAudiencesMessages\Interfaces\IMatchType;
 
 class LessThan implements IMatchType

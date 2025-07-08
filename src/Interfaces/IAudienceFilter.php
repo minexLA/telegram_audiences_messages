@@ -6,15 +6,15 @@ use Illuminate\Database\Eloquent\Builder;
 
 interface IAudienceFilter
 {
-    function getTitle(): string;
+    public function getTitle(): string;
 
-    function getKey(): string;
+    public function getKey(): string;
 
-    function getMatchTypes(): array;
+    public function getMatchTypes(): array;
 
-    function getType(): string;
+    public function getType(): string;
 
-    function getSettings(): array|null;
+    public function getSettings(): array|null;
 
-    function applyToQuery(Builder $query, string $matchType, array $data): Builder;
+    public function applyToQuery(Builder $query, string $matchType, array $data): Builder;
 }

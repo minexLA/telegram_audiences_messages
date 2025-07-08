@@ -42,7 +42,7 @@ class TelegramAudience extends Model
         return $classString;
     }
 
-    function getBotTokenAttribute(): string
+    public function getBotTokenAttribute(): string
     {
         $token = config("telegram-audiences-messages.audiences.$this->type.bot_token", null);
         if (! $token) {
@@ -55,7 +55,6 @@ class TelegramAudience extends Model
     /**
      * Resolve al filter and get a collection of items
      *
-     * @return Collection
      * @throws TypeNotFoundException
      */
     public function resolve(): Collection
@@ -68,7 +67,6 @@ class TelegramAudience extends Model
     /**
      * Build a query
      *
-     * @return Builder
      * @throws TypeNotFoundException
      */
     public function buildQuery(): Builder

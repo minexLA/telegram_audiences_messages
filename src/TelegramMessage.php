@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -72,7 +71,7 @@ class TelegramMessage extends Model
         }
 
         $this->recipients()->where([
-            'send_status' => 'to_send'
+            'send_status' => 'to_send',
         ])->chunk(500, function ($chunk) use ($text, $messageType, $buttons, &$media) {
             /** @var TelegramMessageRecipient $recipient */
             foreach ($chunk as $recipient) {
@@ -81,6 +80,7 @@ class TelegramMessage extends Model
 
                 if (! $recipientModel) {
                     $recipient->markAsFailed();
+
                     continue;
                 }
 
@@ -96,33 +96,56 @@ class TelegramMessage extends Model
                 try {
                     switch ($messageType) {
                         case 'text':
-                            $result = Http::post($apiUrl . 'sendMessage', $data);
+                            $result = Http::post($apiUrl.'sendMessage', $data);
 
                             $this->checkSendResult($result, $recipient);
                             break;
+
                         case 'image':
                             $photo = $media->first();
 
                             if ($photo->telegram_file_id) {
+                                $data['photo'] = $photo->telegram_file_id;
 
-                            }
-                            else {
+                                $result = Http::post($apiUrl.'sendPhoto', $data);
+                            } else {
                                 $data = $this->formatDataForMultipartRequest($data);
 
                                 $result = Http::attach(
                                     'photo',
                                     contents: Storage::disk('local')->readStream($photo->path),
                                     filename: Str::afterLast($photo->path, '/'),
-                                )->post($apiUrl . 'sendPhoto', $data);
+                                )->post($apiUrl.'sendPhoto', $data);
                             }
 
-                            $this->checkSendResult($result, $recipient, $photo);
+                            $this->checkSendResult($result, $recipient);
+                            $this->updateMediaFileId($result, $photo);
+                            break;
+
+                        case 'video':
+                            $video = $media->first();
+
+                            if ($video->telegram_file_id) {
+                                $data['video'] = $video->telegram_file_id;
+
+                                $result = Http::post($apiUrl.'sendVideo', $data);
+                            } else {
+                                $data = $this->formatDataForMultipartRequest($data);
+
+                                $result = Http::attach(
+                                    'video',
+                                    contents: Storage::disk('local')->readStream($video->path),
+                                    filename: Str::afterLast($video->path, '/'),
+                                )->post($apiUrl.'sendVideo', $data);
+                            }
+
+                            $this->checkSendResult($result, $recipient);
+                            $this->updateMediaFileId($result, $video);
                             break;
                     }
-                }
-                catch (\Exception $e) {
+                } catch (\Exception $e) {
                     $recipient->markAsFailed();
-                    dd($e);
+
                     continue;
                 }
 
@@ -134,7 +157,6 @@ class TelegramMessage extends Model
     /**
      * Sync all recipients for current message. Don`t work with trigger type message
      *
-     * @return void
      * @throws TypeNotFoundException
      */
     public function syncRecipients(): void
@@ -161,10 +183,6 @@ class TelegramMessage extends Model
 
     /**
      * Add a new recipient for current message instance
-     *
-     * @param Model $recipient
-     * @param string $botToken
-     * @return TelegramMessageRecipient
      */
     public function addRecipient(Model $recipient, string $botToken): TelegramMessageRecipient
     {
@@ -176,7 +194,7 @@ class TelegramMessage extends Model
             'user_type' => get_class($recipient),
             'user_id' => $recipient->getKey(),
             'bot_token' => $botToken,
-            'status' => 'to_send'
+            'status' => 'to_send',
         ]);
     }
 
@@ -187,24 +205,41 @@ class TelegramMessage extends Model
                 [
                     'text' => $button->label,
                     'url' => $button->content,
-                ]
+                ],
             ];
         })->toArray();
     }
 
-    protected function checkSendResult(\Illuminate\Http\Client\Response $result, TelegramMessageRecipient $recipient, TelegramMessageMedia|null &$media = null): void
+    protected function checkSendResult(
+        \Illuminate\Http\Client\Response $result,
+        TelegramMessageRecipient $recipient
+    ): void {
+        $result = $result->json();
+
+        if ($result['ok'] ?? false) {
+            $recipient->markAsSuccess($result['result']['message_id']);
+        } else {
+            $recipient->markAsFailed();
+        }
+    }
+
+    protected function updateMediaFileId(\Illuminate\Http\Client\Response $result, TelegramMessageMedia &$media): void
     {
         $result = $result->json();
-        if ($result['ok']??false) {
-            $recipient->markAsSuccess($result['result']['message_id']);
 
-            if ($media) {
-                $file = $result['result']['photo'][0];
-                $media->telegram_file_id = $file['file_id'];
+        if (($result['ok'] ?? false) || ! $media->telegram_file_id) {
+            $file_id = null;
+            if (isset($result['result']['photo'])) {
+                $file_id = $result['result']['photo'][0]['file_id'];
             }
-        }
-        else {
-            $recipient->markAsFailed();
+            if ($result['result']['video']) {
+                $file_id = $result['result']['video']['file_id'];
+            }
+
+            if ($file_id) {
+                $media->telegram_file_id = $file_id;
+                $media->save();
+            }
         }
     }
 
@@ -213,7 +248,7 @@ class TelegramMessage extends Model
         $data['reply_markup'] = json_encode($data['reply_markup']);
 
         return collect($data)
-            ->map(fn($value, $key) => ['name' => $key, 'contents' => $value])
+            ->map(fn ($value, $key) => ['name' => $key, 'contents' => $value])
             ->values()
             ->all();
     }

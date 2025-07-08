@@ -14,7 +14,7 @@ class TelegramMessageButtonFactory extends Factory
     public function definition(): array
     {
         $types = [
-            'link'
+            'link',
         ];
 
         return [

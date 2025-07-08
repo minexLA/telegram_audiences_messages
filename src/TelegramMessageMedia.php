@@ -16,7 +16,7 @@ class TelegramMessageMedia extends Model
         'message_id',
         'path',
         'type',
-        'telegram_file_id'
+        'telegram_file_id',
     ];
 
     public function message(): HasOne

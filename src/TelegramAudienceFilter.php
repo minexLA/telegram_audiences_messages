@@ -2,10 +2,10 @@
 
 namespace Minex\TelegramAudiencesMessages;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Builder;
 use Minex\TelegramAudiencesMessages\Interfaces\IAudienceFilter;
 
 /**
@@ -28,7 +28,7 @@ class TelegramAudienceFilter extends Model
     ];
 
     protected $casts = [
-        'data' => 'array'
+        'data' => 'array',
     ];
 
     protected $attributes = [
@@ -36,7 +36,7 @@ class TelegramAudienceFilter extends Model
     ];
 
     protected $appends = [
-        'filter'
+        'filter',
     ];
 
     public function getFilterAttribute(): IAudienceFilter|null
