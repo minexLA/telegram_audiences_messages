@@ -13,10 +13,12 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Minex\TelegramAudiencesMessages\Exceptions\TypeNotFoundException;
 use Minex\TelegramAudiencesMessages\Interfaces\HasTelegramId;
+use Minex\TelegramAudiencesMessages\Interfaces\ISendHelper;
 
 /**
  * @property string|null $related_type
  * @property int|null $related_id
+ * @property string $name
  * @property string $type
  * @property string|null $trigger
  * @property string $text
@@ -32,6 +34,7 @@ class TelegramMessage extends Model
     protected $fillable = [
         'related_type',
         'related_id',
+        'name',
         'type',
         'trigger',
         'text',
@@ -74,6 +77,8 @@ class TelegramMessage extends Model
         $media = $this->media;
         $buttons = $this->buttons;
         $messageType = 'text';
+        $delay = (1 / config('telegram-audiences-messages.messages_per_sec', 10)) * 1_000_000;
+        $helper = $this->getHelper();
 
         if ($media->isNotEmpty()) {
             $messageType = $media->first()->type;
@@ -81,7 +86,7 @@ class TelegramMessage extends Model
 
         $this->recipients()->where([
             'send_status' => 'to_send',
-        ])->chunk(500, function ($chunk) use ($text, $messageType, $buttons, &$media) {
+        ])->chunk(500, function ($chunk) use ($text, $messageType, $buttons, &$media, $delay, $helper) {
             /** @var TelegramMessageRecipient $recipient */
             foreach ($chunk as $recipient) {
                 $apiUrl = "https://api.telegram.org/bot$recipient->bot_token/";
@@ -103,6 +108,10 @@ class TelegramMessage extends Model
                 }
 
                 try {
+                    if ($helper) {
+                        $data = $helper->beforeEachSend($recipient, $recipientModel, $data);
+                    }
+
                     switch ($messageType) {
                         case 'text':
                             $result = Http::post($apiUrl.'sendMessage', $data);
@@ -158,7 +167,7 @@ class TelegramMessage extends Model
                     continue;
                 }
 
-                usleep(1 / 15 * 1_000_000);
+                usleep($delay);
             }
         });
     }
@@ -260,5 +269,15 @@ class TelegramMessage extends Model
             ->map(fn ($value, $key) => ['name' => $key, 'contents' => $value])
             ->values()
             ->all();
+    }
+
+    protected function getHelper(): ISendHelper|null
+    {
+        $helperClass = config('telegram-audiences-messages.helper');
+        if (! $helperClass) {
+            return null;
+        }
+
+        return new $helperClass;
     }
 }

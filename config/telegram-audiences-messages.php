@@ -35,4 +35,14 @@ return [
     'filters' => [
         'example' => 'App\\Filters\\Filter.php',
     ],
+
+    /*
+    | ------------------------------------------------------------------
+    | Number of messages sent for per 1 second. Will be used to calculate delay for mass sending
+    |------------------------------------------------------------------
+    |
+    */
+    'messages_per_sec' => 15,
+
+    'helper' => null,
 ];

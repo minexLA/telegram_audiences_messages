@@ -11,6 +11,7 @@ return new class extends Migration
         Schema::create('telegram_messages', function (Blueprint $table) {
             $table->id();
             $table->nullableMorphs('related');
+            $table->string('name', 100);
             $table->string('type', 20)->default('mass')->index();
             $table->string('trigger', 100)->index()->nullable();
             $table->string('text', 5000);

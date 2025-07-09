@@ -22,6 +22,7 @@ class TelegramMessageFactory extends Factory
         ];
 
         return [
+            'name' => $this->faker->word(),
             'type' => $type = $this->faker->randomElement($types),
             'trigger' => $this->faker->optional((int) $type == 'trigger')->word(),
             'text' => $this->faker->text(4096),
