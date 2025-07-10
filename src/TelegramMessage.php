@@ -284,7 +284,7 @@ class TelegramMessage extends Model
             if (isset($result['result']['photo'])) {
                 $file_id = $result['result']['photo'][0]['file_id'];
             }
-            if ($result['result']['video']) {
+            if (isset($result['result']['video'])) {
                 $file_id = $result['result']['video']['file_id'];
             }
 
