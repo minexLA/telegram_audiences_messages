@@ -192,6 +192,7 @@ class TelegramMessage extends Model
                 } catch (\Exception $e) {
                     $recipient->markAsFailed();
 
+                    report($e);
                     continue;
                 }
 
@@ -278,7 +279,7 @@ class TelegramMessage extends Model
     {
         $result = $result->json();
 
-        if (($result['ok'] ?? false) || !$media->telegram_file_id) {
+        if (($result['ok'] ?? false) && !$media->telegram_file_id) {
             $file_id = null;
             if (isset($result['result']['photo'])) {
                 $file_id = $result['result']['photo'][0]['file_id'];
