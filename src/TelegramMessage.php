@@ -89,7 +89,13 @@ class TelegramMessage extends Model
         ]);
     }
 
-    public function send(): void
+    /**
+     * Send message. If recipient param passed send message only to him. Otherwise, send to all recipients with status to_send
+     *
+     * @param TelegramMessageRecipient|null $recipient
+     * @return void
+     */
+    public function send(TelegramMessageRecipient|null $recipient = null): void
     {
         $text = $this->text;
         $media = $this->media;
@@ -102,9 +108,13 @@ class TelegramMessage extends Model
             $messageType = $media->first()->type;
         }
 
-        $this->recipients()->where([
-            'send_status' => 'to_send',
-        ])->chunk(500, function ($chunk) use ($text, $messageType, $buttons, &$media, $delay, $helper) {
+        $this->recipients()
+            ->when((bool) $recipient, function (Builder $query) {
+                $query->where('id', $recipient->id);
+            })
+            ->where([
+                'send_status' => 'to_send',
+            ])->chunk(500, function ($chunk) use ($text, $messageType, $buttons, &$media, $delay, $helper) {
             /** @var TelegramMessageRecipient $recipient */
             foreach ($chunk as $recipient) {
                 $apiUrl = "https://api.telegram.org/bot$recipient->bot_token/";
@@ -219,6 +229,10 @@ class TelegramMessage extends Model
 
     /**
      * Add a new recipient for current message instance
+     *
+     * @param Model $recipient
+     * @param string $botToken
+     * @return TelegramMessageRecipient
      */
     public function addRecipient(Model $recipient, string $botToken): TelegramMessageRecipient
     {
