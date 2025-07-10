@@ -2,7 +2,9 @@
 
 namespace Minex\TelegramAudiencesMessages;
 
+use App\Models\Webinar;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -71,6 +73,22 @@ class TelegramMessage extends Model
         return $this->hasMany(TelegramMessageRecipient::class, 'message_id', 'id');
     }
 
+    public function scopeWhereRelated(Builder $query, Model $model): Builder
+    {
+        return $query->where([
+            'related_type' => get_class($model),
+            'related_id' => $model->getKey(),
+        ]);
+    }
+
+    public function scopeWhereTrigger(Builder $query, string $trigger): Builder
+    {
+        return $query->where([
+            'type' => 'trigger',
+            'trigger' => $trigger,
+        ]);
+    }
+
     public function send(): void
     {
         $text = $this->text;
@@ -92,7 +110,7 @@ class TelegramMessage extends Model
                 $apiUrl = "https://api.telegram.org/bot$recipient->bot_token/";
                 $recipientModel = $recipient->user;
 
-                if (! $recipientModel) {
+                if (!$recipientModel) {
                     $recipient->markAsFailed();
 
                     continue;
@@ -114,7 +132,7 @@ class TelegramMessage extends Model
 
                     switch ($messageType) {
                         case 'text':
-                            $result = Http::post($apiUrl.'sendMessage', $data);
+                            $result = Http::post($apiUrl . 'sendMessage', $data);
 
                             $this->checkSendResult($result, $recipient);
                             break;
@@ -125,7 +143,7 @@ class TelegramMessage extends Model
                             if ($photo->telegram_file_id) {
                                 $data['photo'] = $photo->telegram_file_id;
 
-                                $result = Http::post($apiUrl.'sendPhoto', $data);
+                                $result = Http::post($apiUrl . 'sendPhoto', $data);
                             } else {
                                 $data = $this->formatDataForMultipartRequest($data);
 
@@ -133,7 +151,7 @@ class TelegramMessage extends Model
                                     'photo',
                                     contents: Storage::disk('local')->readStream($photo->path),
                                     filename: Str::afterLast($photo->path, '/'),
-                                )->post($apiUrl.'sendPhoto', $data);
+                                )->post($apiUrl . 'sendPhoto', $data);
                             }
 
                             $this->checkSendResult($result, $recipient);
@@ -146,7 +164,7 @@ class TelegramMessage extends Model
                             if ($video->telegram_file_id) {
                                 $data['video'] = $video->telegram_file_id;
 
-                                $result = Http::post($apiUrl.'sendVideo', $data);
+                                $result = Http::post($apiUrl . 'sendVideo', $data);
                             } else {
                                 $data = $this->formatDataForMultipartRequest($data);
 
@@ -154,7 +172,7 @@ class TelegramMessage extends Model
                                     'video',
                                     contents: Storage::disk('local')->readStream($video->path),
                                     filename: Str::afterLast($video->path, '/'),
-                                )->post($apiUrl.'sendVideo', $data);
+                                )->post($apiUrl . 'sendVideo', $data);
                             }
 
                             $this->checkSendResult($result, $recipient);
@@ -192,7 +210,7 @@ class TelegramMessage extends Model
                     'user_id' => $recipient->getKey(),
                 ])->first();
 
-                if (! $recipientInstance) {
+                if (!$recipientInstance) {
                     $this->addRecipient($recipient, $botToken);
                 }
             }
@@ -204,7 +222,7 @@ class TelegramMessage extends Model
      */
     public function addRecipient(Model $recipient, string $botToken): TelegramMessageRecipient
     {
-        if (! $recipient instanceof HasTelegramId) {
+        if (!$recipient instanceof HasTelegramId) {
             throw new \InvalidArgumentException('Recipient must be an Eloquent Model implementing HasTelegramId.');
         }
 
@@ -230,8 +248,9 @@ class TelegramMessage extends Model
 
     protected function checkSendResult(
         \Illuminate\Http\Client\Response $result,
-        TelegramMessageRecipient $recipient
-    ): void {
+        TelegramMessageRecipient         $recipient
+    ): void
+    {
         $result = $result->json();
 
         if ($result['ok'] ?? false) {
@@ -245,7 +264,7 @@ class TelegramMessage extends Model
     {
         $result = $result->json();
 
-        if (($result['ok'] ?? false) || ! $media->telegram_file_id) {
+        if (($result['ok'] ?? false) || !$media->telegram_file_id) {
             $file_id = null;
             if (isset($result['result']['photo'])) {
                 $file_id = $result['result']['photo'][0]['file_id'];
@@ -266,7 +285,7 @@ class TelegramMessage extends Model
         $data['reply_markup'] = json_encode($data['reply_markup']);
 
         return collect($data)
-            ->map(fn ($value, $key) => ['name' => $key, 'contents' => $value])
+            ->map(fn($value, $key) => ['name' => $key, 'contents' => $value])
             ->values()
             ->all();
     }
@@ -274,7 +293,7 @@ class TelegramMessage extends Model
     protected function getHelper(): ISendHelper|null
     {
         $helperClass = config('telegram-audiences-messages.helper');
-        if (! $helperClass) {
+        if (!$helperClass) {
             return null;
         }
 
