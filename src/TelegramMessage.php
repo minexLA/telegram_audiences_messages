@@ -109,7 +109,7 @@ class TelegramMessage extends Model
         }
 
         $this->recipients()
-            ->when((bool) $recipient, function (Builder $query) {
+            ->when((bool) $recipient, function (Builder $query) use ($recipient) {
                 $query->where('id', $recipient->id);
             })
             ->where([
