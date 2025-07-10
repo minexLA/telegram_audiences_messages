@@ -202,7 +202,8 @@ class TelegramMessage extends Model
     }
 
     /**
-     * Sync all recipients for current message. Don`t work with trigger type message
+     * Sync all recipients for current message. Don`t work with trigger type message.
+     * All recipients who have "to_send" status and don't align to current audiences anymore will be deleted from recipients list
      *
      * @throws TypeNotFoundException
      */
@@ -210,6 +211,7 @@ class TelegramMessage extends Model
     {
         $audiences = $this->audiences;
 
+        $updatedIdsList = [];
         /** @var TelegramAudience $audience */
         foreach ($audiences as $audience) {
             $recipients = $audience->resolve();
@@ -222,10 +224,14 @@ class TelegramMessage extends Model
                 ])->first();
 
                 if (!$recipientInstance) {
-                    $this->addRecipient($recipient, $botToken);
+                    $recipientInstance = $this->addRecipient($recipient, $botToken);
                 }
+
+                $updatedIdsList[] = $recipientInstance->id;
             }
         }
+
+        $this->recipients()->whereNotIn('id', $updatedIdsList)->where('send_status', 'to_send')->delete();
     }
 
     /**
