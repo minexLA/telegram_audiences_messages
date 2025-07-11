@@ -2,7 +2,6 @@
 
 namespace Minex\TelegramAudiencesMessages;
 
-use App\Models\Webinar;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -92,8 +91,7 @@ class TelegramMessage extends Model
     /**
      * Send message. If recipient param passed send message only to him. Otherwise, send to all recipients with status to_send
      *
-     * @param TelegramMessageRecipient|null $recipient
-     * @return void
+     * @param  TelegramMessageRecipient|null  $recipient
      */
     public function send(TelegramMessageRecipient|null $recipient = null): void
     {
@@ -115,90 +113,91 @@ class TelegramMessage extends Model
             ->where([
                 'send_status' => 'to_send',
             ])->chunk(500, function ($chunk) use ($text, $messageType, $buttons, &$media, $delay, $helper) {
-            /** @var TelegramMessageRecipient $recipient */
-            foreach ($chunk as $recipient) {
-                $apiUrl = "https://api.telegram.org/bot$recipient->bot_token/";
-                $recipientModel = $recipient->user;
+                /** @var TelegramMessageRecipient $recipient */
+                foreach ($chunk as $recipient) {
+                    $apiUrl = "https://api.telegram.org/bot$recipient->bot_token/";
+                    $recipientModel = $recipient->user;
 
-                if (!$recipientModel) {
-                    $recipient->markAsFailed();
+                    if (! $recipientModel) {
+                        $recipient->markAsFailed();
 
-                    continue;
-                }
-
-                $data = [
-                    'chat_id' => $recipientModel->getTelegramId(),
-                    $messageType == 'text' ? 'text' : 'caption' => $text,
-                    'parse_mode' => 'html',
-                ];
-                if ($buttons->isNotEmpty()) {
-                    $data['reply_markup']['inline_keyboard'] = $this->formatButtons($buttons);
-                }
-
-                try {
-                    if ($helper) {
-                        $data = $helper->beforeEachSend($recipient, $recipientModel, $data);
+                        continue;
                     }
 
-                    switch ($messageType) {
-                        case 'text':
-                            $result = Http::post($apiUrl . 'sendMessage', $data);
-
-                            $this->checkSendResult($result, $recipient);
-                            break;
-
-                        case 'image':
-                            $photo = $media->first();
-
-                            if ($photo->telegram_file_id) {
-                                $data['photo'] = $photo->telegram_file_id;
-
-                                $result = Http::post($apiUrl . 'sendPhoto', $data);
-                            } else {
-                                $data = $this->formatDataForMultipartRequest($data);
-
-                                $result = Http::attach(
-                                    'photo',
-                                    contents: Storage::disk('local')->readStream($photo->path),
-                                    filename: Str::afterLast($photo->path, '/'),
-                                )->post($apiUrl . 'sendPhoto', $data);
-                            }
-
-                            $this->checkSendResult($result, $recipient);
-                            $this->updateMediaFileId($result, $photo);
-                            break;
-
-                        case 'video':
-                            $video = $media->first();
-
-                            if ($video->telegram_file_id) {
-                                $data['video'] = $video->telegram_file_id;
-
-                                $result = Http::post($apiUrl . 'sendVideo', $data);
-                            } else {
-                                $data = $this->formatDataForMultipartRequest($data);
-
-                                $result = Http::attach(
-                                    'video',
-                                    contents: Storage::disk('local')->readStream($video->path),
-                                    filename: Str::afterLast($video->path, '/'),
-                                )->post($apiUrl . 'sendVideo', $data);
-                            }
-
-                            $this->checkSendResult($result, $recipient);
-                            $this->updateMediaFileId($result, $video);
-                            break;
+                    $data = [
+                        'chat_id' => $recipientModel->getTelegramId(),
+                        $messageType == 'text' ? 'text' : 'caption' => $text,
+                        'parse_mode' => 'html',
+                    ];
+                    if ($buttons->isNotEmpty()) {
+                        $data['reply_markup']['inline_keyboard'] = $this->formatButtons($buttons);
                     }
-                } catch (\Exception $e) {
-                    $recipient->markAsFailed();
 
-                    report($e);
-                    continue;
+                    try {
+                        if ($helper) {
+                            $data = $helper->beforeEachSend($recipient, $recipientModel, $data);
+                        }
+
+                        switch ($messageType) {
+                            case 'text':
+                                $result = Http::post($apiUrl.'sendMessage', $data);
+
+                                $this->checkSendResult($result, $recipient);
+                                break;
+
+                            case 'image':
+                                $photo = $media->first();
+
+                                if ($photo->telegram_file_id) {
+                                    $data['photo'] = $photo->telegram_file_id;
+
+                                    $result = Http::post($apiUrl.'sendPhoto', $data);
+                                } else {
+                                    $data = $this->formatDataForMultipartRequest($data);
+
+                                    $result = Http::attach(
+                                        'photo',
+                                        contents: Storage::disk('local')->readStream($photo->path),
+                                        filename: Str::afterLast($photo->path, '/'),
+                                    )->post($apiUrl.'sendPhoto', $data);
+                                }
+
+                                $this->checkSendResult($result, $recipient);
+                                $this->updateMediaFileId($result, $photo);
+                                break;
+
+                            case 'video':
+                                $video = $media->first();
+
+                                if ($video->telegram_file_id) {
+                                    $data['video'] = $video->telegram_file_id;
+
+                                    $result = Http::post($apiUrl.'sendVideo', $data);
+                                } else {
+                                    $data = $this->formatDataForMultipartRequest($data);
+
+                                    $result = Http::attach(
+                                        'video',
+                                        contents: Storage::disk('local')->readStream($video->path),
+                                        filename: Str::afterLast($video->path, '/'),
+                                    )->post($apiUrl.'sendVideo', $data);
+                                }
+
+                                $this->checkSendResult($result, $recipient);
+                                $this->updateMediaFileId($result, $video);
+                                break;
+                        }
+                    } catch (\Exception $e) {
+                        $recipient->markAsFailed();
+
+                        report($e);
+
+                        continue;
+                    }
+
+                    usleep($delay);
                 }
-
-                usleep($delay);
-            }
-        });
+            });
     }
 
     /**
@@ -223,7 +222,7 @@ class TelegramMessage extends Model
                     'user_id' => $recipient->getKey(),
                 ])->first();
 
-                if (!$recipientInstance) {
+                if (! $recipientInstance) {
                     $recipientInstance = $this->addRecipient($recipient, $botToken);
                 }
 
@@ -236,14 +235,10 @@ class TelegramMessage extends Model
 
     /**
      * Add a new recipient for current message instance
-     *
-     * @param Model $recipient
-     * @param string $botToken
-     * @return TelegramMessageRecipient
      */
     public function addRecipient(Model $recipient, string $botToken): TelegramMessageRecipient
     {
-        if (!$recipient instanceof HasTelegramId) {
+        if (! $recipient instanceof HasTelegramId) {
             throw new \InvalidArgumentException('Recipient must be an Eloquent Model implementing HasTelegramId.');
         }
 
@@ -269,9 +264,8 @@ class TelegramMessage extends Model
 
     protected function checkSendResult(
         \Illuminate\Http\Client\Response $result,
-        TelegramMessageRecipient         $recipient
-    ): void
-    {
+        TelegramMessageRecipient $recipient
+    ): void {
         $result = $result->json();
 
         if ($result['ok'] ?? false) {
@@ -285,7 +279,7 @@ class TelegramMessage extends Model
     {
         $result = $result->json();
 
-        if (($result['ok'] ?? false) && !$media->telegram_file_id) {
+        if (($result['ok'] ?? false) && ! $media->telegram_file_id) {
             $file_id = null;
             if (isset($result['result']['photo'])) {
                 $file_id = $result['result']['photo'][0]['file_id'];
@@ -306,7 +300,7 @@ class TelegramMessage extends Model
         $data['reply_markup'] = json_encode($data['reply_markup']);
 
         return collect($data)
-            ->map(fn($value, $key) => ['name' => $key, 'contents' => $value])
+            ->map(fn ($value, $key) => ['name' => $key, 'contents' => $value])
             ->values()
             ->all();
     }
@@ -314,7 +308,7 @@ class TelegramMessage extends Model
     protected function getHelper(): ISendHelper|null
     {
         $helperClass = config('telegram-audiences-messages.helper');
-        if (!$helperClass) {
+        if (! $helperClass) {
             return null;
         }
 

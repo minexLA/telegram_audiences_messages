@@ -25,11 +25,11 @@ return [
 
     /*
     | ------------------------------------------------------------------
-    | Map of filters keys and classes
+    | Map of filters keys and their classes
     |------------------------------------------------------------------
     |
     | Format:
-    | [ key => class ]
+    | [ "key" => "App\\Filters\\Filter.php" ]
     |
     */
     'filters' => [
@@ -44,5 +44,14 @@ return [
     */
     'messages_per_sec' => 15,
 
+    /*
+    | ------------------------------------------------------------------
+    | Helper class that used when sending message. Must implement Minex\TelegramAudiencesMessages\Interfaces\ISendHelper interface.
+    | Now supported only beforeEachSend method.
+    |
+    | Example: 'helper' => AppHelpers\SomeHelper::class,
+    |------------------------------------------------------------------
+    |
+    */
     'helper' => null,
 ];
