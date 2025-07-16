@@ -297,7 +297,9 @@ class TelegramMessage extends Model
 
     protected function formatDataForMultipartRequest(array $data): array
     {
-        $data['reply_markup'] = json_encode($data['reply_markup']);
+        if (isset($data['reply_markup'])) {
+            $data['reply_markup'] = json_encode($data['reply_markup']);
+        }
 
         return collect($data)
             ->map(fn ($value, $key) => ['name' => $key, 'contents' => $value])
