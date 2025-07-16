@@ -157,7 +157,7 @@ class TelegramMessage extends Model
 
                                     $result = Http::attach(
                                         'photo',
-                                        contents: Storage::disk('local')->readStream($photo->path),
+                                        contents: Storage::disk(config('telegram-audiences-messages.filesystem_disk'))->readStream($photo->path),
                                         filename: Str::afterLast($photo->path, '/'),
                                     )->post($apiUrl.'sendPhoto', $data);
                                 }
@@ -178,7 +178,7 @@ class TelegramMessage extends Model
 
                                     $result = Http::attach(
                                         'video',
-                                        contents: Storage::disk('local')->readStream($video->path),
+                                        contents: Storage::disk(config('telegram-audiences-messages.filesystem_disk'))->readStream($video->path),
                                         filename: Str::afterLast($video->path, '/'),
                                     )->post($apiUrl.'sendVideo', $data);
                                 }
@@ -297,7 +297,9 @@ class TelegramMessage extends Model
 
     protected function formatDataForMultipartRequest(array $data): array
     {
-        $data['reply_markup'] = json_encode($data['reply_markup']);
+        if (isset($data['reply_markup'])) {
+            $data['reply_markup'] = json_encode($data['reply_markup']);
+        }
 
         return collect($data)
             ->map(fn ($value, $key) => ['name' => $key, 'contents' => $value])
