@@ -54,4 +54,6 @@ return [
     |
     */
     'helper' => null,
+
+    'filesystem_disk' => env('FILESYSTEM_DISK', 'local'),
 ];
