@@ -112,7 +112,7 @@ class TelegramMessage extends Model
             })
             ->where([
                 'send_status' => 'to_send',
-            ])->chunk(500, function ($chunk) use ($text, $messageType, $buttons, &$media, $delay, $helper) {
+            ])->chunkById(500, function ($chunk) use ($text, $messageType, $buttons, &$media, $delay, $helper) {
                 /** @var TelegramMessageRecipient $recipient */
                 foreach ($chunk as $recipient) {
                     $apiUrl = "https://api.telegram.org/bot$recipient->bot_token/";
