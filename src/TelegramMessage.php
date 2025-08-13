@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -112,7 +113,9 @@ class TelegramMessage extends Model
             })
             ->where([
                 'send_status' => 'to_send',
-            ])->chunkById(500, function ($chunk) use ($text, $messageType, $buttons, &$media, $delay, $helper) {
+            ])
+            ->orderBy('id')
+            ->chunkById(500, function ($chunk) use ($text, $messageType, $buttons, &$media, $delay, $helper) {
                 /** @var TelegramMessageRecipient $recipient */
                 foreach ($chunk as $recipient) {
                     $apiUrl = "https://api.telegram.org/bot$recipient->bot_token/";
@@ -136,6 +139,16 @@ class TelegramMessage extends Model
                     try {
                         if ($helper) {
                             $data = $helper->beforeEachSend($recipient, $recipientModel, $data);
+                        }
+
+                        $lock = false;
+                        if ($this->type == 'mass') {
+                            $lock = Cache::lock("mass-messaging:$this->id-rec:$recipient->id", 60*5);
+                        }
+
+                        // Try to get lock
+                        if ($lock && ! $lock->get()) {
+                            continue;
                         }
 
                         switch ($messageType) {
@@ -193,6 +206,9 @@ class TelegramMessage extends Model
                         report($e);
 
                         continue;
+                    }
+                    finally {
+                        optional($lock)->release();
                     }
 
                     usleep($delay);
