@@ -118,6 +118,11 @@ class TelegramMessage extends Model
             ->chunkById(500, function ($chunk) use ($text, $messageType, $buttons, &$media, $delay, $helper) {
                 /** @var TelegramMessageRecipient $recipient */
                 foreach ($chunk as $recipient) {
+                    $recipient = $recipient->fresh();
+                    if ($recipient->send_status != 'to_send') {
+                        continue;
+                    }
+
                     $apiUrl = "https://api.telegram.org/bot$recipient->bot_token/";
                     $recipientModel = $recipient->user;
 
