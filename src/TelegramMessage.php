@@ -172,12 +172,19 @@ class TelegramMessage extends Model
                                     $result = Http::post($apiUrl.'sendPhoto', $data);
                                 } else {
                                     $data = $this->formatDataForMultipartRequest($data);
+                                    $stream = Storage::disk(config('telegram-audiences-messages.filesystem_disk'))->readStream($photo->path);
 
-                                    $result = Http::attach(
-                                        'photo',
-                                        contents: Storage::disk(config('telegram-audiences-messages.filesystem_disk'))->readStream($photo->path),
-                                        filename: Str::afterLast($photo->path, '/'),
-                                    )->post($apiUrl.'sendPhoto', $data);
+                                    $data[] = [
+                                        'name' => 'photo',
+                                        'contents' => $stream,
+                                        'filename' => Str::afterLast($photo->path, '/'),
+                                    ];
+
+                                    $result = Http::asMultipart()->post($apiUrl.'sendPhoto', $data);
+
+                                    if (is_resource($stream)) {
+                                        fclose($stream);
+                                    }
                                 }
 
                                 $this->checkSendResult($result, $recipient);
@@ -193,12 +200,19 @@ class TelegramMessage extends Model
                                     $result = Http::post($apiUrl.'sendVideo', $data);
                                 } else {
                                     $data = $this->formatDataForMultipartRequest($data);
+                                    $stream = Storage::disk(config('telegram-audiences-messages.filesystem_disk'))->readStream($video->path);
 
-                                    $result = Http::attach(
-                                        'video',
-                                        contents: Storage::disk(config('telegram-audiences-messages.filesystem_disk'))->readStream($video->path),
-                                        filename: Str::afterLast($video->path, '/'),
-                                    )->post($apiUrl.'sendVideo', $data);
+                                    $data[] = [
+                                        'name' => 'video',
+                                        'contents' => $stream,
+                                        'filename' => Str::afterLast($video->path, '/'),
+                                    ];
+
+                                    $result = Http::asMultipart()->post($apiUrl.'sendVideo', $data);
+
+                                    if (is_resource($stream)) {
+                                        fclose($stream);
+                                    }
                                 }
 
                                 $this->checkSendResult($result, $recipient);
