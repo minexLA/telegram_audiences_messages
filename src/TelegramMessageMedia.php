@@ -10,6 +10,10 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property int $message_id
  * @property string $path
  * @property string $type
+ * @property int|null $duration
+ * @property int|null $width
+ * @property int|null $height
+ * @property string|null $thumbnail_path
  * @property int|null $telegram_file_id
  */
 class TelegramMessageMedia extends Model
@@ -22,6 +26,10 @@ class TelegramMessageMedia extends Model
         'message_id',
         'path',
         'type',
+        'duration',
+        'width',
+        'height',
+        'thumbnail_path',
         'telegram_file_id',
     ];
 

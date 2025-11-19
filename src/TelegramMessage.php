@@ -199,8 +199,13 @@ class TelegramMessage extends Model
 
                                     $result = Http::post($apiUrl.'sendVideo', $data);
                                 } else {
+                                    $data['duration'] = $video->duration;
+                                    $data['width'] = $video->width;
+                                    $data['height'] = $video->height;
+
                                     $data = $this->formatDataForMultipartRequest($data);
-                                    $stream = Storage::disk(config('telegram-audiences-messages.filesystem_disk'))->readStream($video->path);
+                                    $storage = Storage::disk(config('telegram-audiences-messages.filesystem_disk'));
+                                    $stream = $storage->readStream($video->path);
 
                                     $data[] = [
                                         'name' => 'video',
@@ -208,10 +213,23 @@ class TelegramMessage extends Model
                                         'filename' => Str::afterLast($video->path, '/'),
                                     ];
 
-                                    $result = Http::asMultipart()->post($apiUrl.'sendVideo', $data);
+                                    if (filled($video->thumbnail_path)) {
+                                        $thumbnailStream = $storage->readStream($video->thumbnail_path);
+
+                                        $data[] = [
+                                            'name' => 'thumbnail',
+                                            'contents' => $thumbnailStream,
+                                            'filename' => Str::afterLast($video->thumbnail_path, '/'),
+                                        ];
+                                    }
+
+                                    $result = Http::asMultipart()->post($apiUrl . 'sendVideo', $data);
 
                                     if (is_resource($stream)) {
                                         fclose($stream);
+                                    }
+                                    if (isset($thumbnailStream) && is_resource($thumbnailStream)) {
+                                        fclose($thumbnailStream);
                                     }
                                 }
 
