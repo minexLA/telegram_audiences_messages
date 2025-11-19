@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('telegram_message_media', function (Blueprint $table) {
+        Schema::table('telegram_message_media', function (Blueprint $table) {
             $table->after('type', function (Blueprint $table) {
                 $table->unsignedSmallInteger('duration')->nullable();
                 $table->unsignedSmallInteger('width')->nullable();
