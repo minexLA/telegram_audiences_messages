@@ -28,7 +28,7 @@ This package allow you to easily create cohorts of users with custom filters sup
 - Custom triggers from your workflows.
 
 ✅ Built for Laravel
-- Supports **Laravel 8, 9, 10**.
+- Supports **Laravel 8-13**.
 
 ---
 
